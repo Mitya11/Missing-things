@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, BINARY
+from sqlalchemy import Column, String, Integer, DateTime, BINARY, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -14,6 +14,7 @@ class Finding(declarative_base()):
     phone_number = Column("phone_number", String)
     datetime = Column("datetime", DateTime)
     image = Column("image", BINARY)
+    group_id = Column("group_id", ForeignKey("group.id"))
 
     def __init__(self, id, text, username, chanel_name, object_vector, feature_vector, datetime, phone_number, image):
         self.id = id
