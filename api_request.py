@@ -15,9 +15,9 @@ def get_messages_from_vk(token,group,count,data = None):
                                         "offset": j * 100}, timeout=5).json()
             messages.extend(list(map(lambda x: x, data["response"]["items"])))
             for i in range(len(messages)): messages[i]["group"] = group
-            count=-100
+            count -=100
             j +=1
             time.sleep(1)
-        except:
-            pass
+        except Exception as e:
+            print(e)
     return messages
