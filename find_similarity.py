@@ -42,14 +42,15 @@ def main():
     connection.close()
     return messanges[:args.count]
 
+<<<<<<< Updated upstream
 simi = main()
 
 for i in simi:
     print(i["text"])
     print("-------------------")
-
+=======
 #print(main())
-
+>>>>>>> Stashed changes
 
 
 
