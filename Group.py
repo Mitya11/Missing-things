@@ -9,7 +9,7 @@ class Group(declarative_base()):
     id = Column("id", Integer, primary_key=True)
     name = Column("name", String)
     city = Column("city", String)
-    type = Column("type",Enum(GroupType))
+    type = Column("type", Enum(GroupType))
     last_message = Column("last_message", Integer)
 
     def __init__(self, id, name, city, type, last_message):
