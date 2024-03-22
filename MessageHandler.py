@@ -1,6 +1,11 @@
 import torch
 import spacy
+<<<<<<< Updated upstream
 import pickle
+=======
+
+
+>>>>>>> Stashed changes
 class MessageHandler:
     def __init__(self,classifier_tokenizer,classifier,feature_extractor_tokenizer,extractor):
         with open(classifier_tokenizer,mode = "rb") as config_file:
@@ -15,6 +20,10 @@ class MessageHandler:
         self.feature_extractor = extractor # Object, Features, Дocation extract
         self.feature_extractor.eval()
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
         self.language_model = spacy.load("ru_core_news_lg") #word embedding
 
     def load(self):
