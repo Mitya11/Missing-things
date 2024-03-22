@@ -1,30 +1,37 @@
 import torch
 import spacy
-from spellchecker import SpellChecker
-
+import pickle
 class MessageHandler:
     def __init__(self,classifier_tokenizer,classifier,feature_extractor_tokenizer,extractor):
-        self.classifier_tokenizer = classifier_tokenizer
+        with open(classifier_tokenizer,mode = "rb") as config_file:
+            self.classifier_tokenizer = pickle.load(config_file)
+
         self.classifier = classifier #AD or not
+        self.classifier.eval()
 
-        self.feature_extractor_tokenizer = feature_extractor_tokenizer
+        with open(feature_extractor_tokenizer,mode = "rb") as config_file:
+            self.feature_extractor_tokenizer = pickle.load(config_file)
+
         self.feature_extractor = extractor # Object, Features, Дocation extract
+        self.feature_extractor.eval()
 
-        self.speller = SpellChecker(language="ru")
         self.language_model = spacy.load("ru_core_news_lg") #word embedding
 
-    def corretion(self,text):
-        return self.speller.correction(text)
+    def load(self):
+        self.classifier.load_state_dict(torch.load("G:\Hakaton/bert_params"))
+        self.feature_extractor.load_state_dict(torch.load("G:\Hakaton/bert_params_address"))
 
     def classify(self,text):
         tokens = torch.tensor([self.classifier_tokenizer.encode(text)])
-        prob = torch.sigmoid(self.classifier(tokens))
+        with torch.no_grad():
+            prob = torch.sigmoid(self.classifier(tokens[:,:512]))
 
         return prob.item() > 0.5
 
     def extract(self,text):
         tokens = torch.tensor([self.feature_extractor_tokenizer.encode(text)])
-        output = self.feature_extractor(tokens)
+        with torch.no_grad():
+            output = self.feature_extractor(tokens[:,:512])
         output = output[0].argmax(dim=-1)
 
         information = ["","",""] # [Object, Features, Location]

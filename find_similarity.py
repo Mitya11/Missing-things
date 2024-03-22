@@ -3,10 +3,12 @@ import argparse
 from Announcement import scoring
 from MessageHandler import MessageHandler
 import numpy as np
+from models.msgExtractor import BertTokenClassifier
+from models.msgClassifier import BertSequenceClassifier
 
 parser = argparse.ArgumentParser("update")
 parser.add_argument('--text', type=str, default='Потерялась собака', help='text')
-parser.add_argument('--count', type=int, default='10', help='text')
+parser.add_argument('--count', type=int, default='100', help='text')
 
 args = parser.parse_args()
 
@@ -16,7 +18,7 @@ def main():
     cursor = connection.cursor()
 
     messanges = cursor.execute("""SELECT * FROM announcement""").fetchall()
-    messanges = b = list(map(lambda x: dict(x),messanges))
+    messanges  = list(map(lambda x: dict(x),messanges))
 
     for i in range(len(messanges)):
         if not messanges[i]["object_vector"] is None:
@@ -24,13 +26,14 @@ def main():
         if not messanges[i]["features_vector"] is None:
             messanges[i]["features_vector"] = np.frombuffer(messanges[i]["features_vector"],dtype=np.float32)
 
-    import baseline
-    handler = MessageHandler(baseline.Tokenizer(),
-                             baseline.SimpleClassifier(),
-                             baseline.Tokenizer(),
-                             baseline.SimpleTokenClassifier())
-
+    handler = MessageHandler("configs/bert-tiny-tokenizer",
+                             BertSequenceClassifier(),
+                             "configs/rubert-tokenizer",
+                             BertTokenClassifier())
+    handler.load()
     source_info = handler.pipeline(args.text)
+    print(source_info)
+    print("******************")
 
     for i in range(len(messanges)):
         messanges[i]["score"] = scoring(source_info, messanges[i])
@@ -39,7 +42,11 @@ def main():
     connection.close()
     return messanges[:args.count]
 
-print(main())
+simi = main()
+
+for i in simi:
+    print(i["text"])
+    print("-------------------")
 
 
 
