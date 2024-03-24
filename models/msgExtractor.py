@@ -13,6 +13,8 @@ class BertTokenClassifier(torch.nn.Module):
         self.transformer = AutoModel.from_config(config)
         self.feedforward = torch.nn.Sequential(torch.nn.Linear(768,512),
                                                torch.nn.ReLU(),
+                                               torch.nn.Linear(512, 512),
+                                               torch.nn.ReLU(),
                                                torch.nn.Linear(512,4))
 
     def forward(self,x,attn_mask = None,whitespaces= None):

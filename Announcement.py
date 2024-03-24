@@ -17,5 +17,5 @@ def scoring(source, target):
         feature_to_obj_similariry = 1 - scipy.spatial.distance.cosine(source["object_vector"],target["features_vector"])
     else:
         feature_to_obj_similariry = 0
-    score = max(levenstein_distance,similarity) + 0.5*feature_similarity + 0.5 * feature_to_obj_similariry
+    score = max(levenstein_distance,similarity) + 0.0*feature_similarity + 0.3 * feature_to_obj_similariry
     return score
