@@ -1,6 +1,7 @@
 import torch
 import spacy
 import pickle
+
 class MessageHandler:
     def __init__(self,classifier_tokenizer,classifier,feature_extractor_tokenizer,extractor):
         with open(classifier_tokenizer,mode = "rb") as config_file:
@@ -18,15 +19,15 @@ class MessageHandler:
         self.language_model = spacy.load("ru_core_news_lg") #word embedding
 
     def load(self):
-        self.classifier.load_state_dict(torch.load("G:\Hakaton/bert_params"))
-        self.feature_extractor.load_state_dict(torch.load("G:\Hakaton/bert_params_address"))
+        self.classifier.load_state_dict(torch.load("G:/Hakaton/bert_params"))
+        self.feature_extractor.load_state_dict(torch.load("G:/Hakaton/bert_params_address"))
 
     def classify(self,text):
         tokens = torch.tensor([self.classifier_tokenizer.encode(text)])
         with torch.no_grad():
-            prob = torch.sigmoid(self.classifier(tokens[:,:512]))
+            prob = self.classifier(tokens[:,:512]).argmax(dim=-1)
 
-        return prob.item() > 0.5
+        return prob
 
     def extract(self,text):
         tokens = torch.tensor([self.feature_extractor_tokenizer.encode(text)])
@@ -36,8 +37,12 @@ class MessageHandler:
 
         information = ["","",""] # [Object, Features, Location]
         for i in range(output.shape[0]):
+            word = self.feature_extractor_tokenizer.decode(tokens[0, i])
+            if "Пудинг" in text:
+                p = 2
+            if output[i] != 1 and output[i - 1] == 1 and word[:2] == "##":
+                output[i] = 1
             if output[i] != 0:
-                word =self.feature_extractor_tokenizer.decode(tokens[0, i])
                 if word[:2] != "##":
                     information[output[i] - 1] += " "
                 if output[i] == 1 and output[i-1] != 1 and word[:2] == "##": #Проверка, на то, что бы все токены одного слова были одного класса
@@ -45,8 +50,6 @@ class MessageHandler:
                     information[output[i-1]] = information[output[i-1]][:- len(prev_word)]
                     information[1] += prev_word
                     output[i-1] = 1
-                elif output[i]!= 1 and output[i-1] == 1 and word[:2] == "##":
-                    output[i] = 1
 
                 information[output[i] - 1] += word.replace("#","")
         if not information[0]: # Если объект не найден, то используются вторичные признаки
@@ -60,7 +63,8 @@ class MessageHandler:
         return doc.vector
 
     def pipeline(self,text):
-        if not self.classify(text):
+        type = self.classify(text).item()
+        if not type:
             return False
 
         attributes = self.extract(text)
@@ -81,5 +85,12 @@ class MessageHandler:
             if sum(embedding_features) == 0:
                 embedding_features = None
 
-        return {"object": obj_info, "features": features, "location": attributes["location"], "object_vector":embedding_obj, "features_vector":embedding_features}
+        return {"object": obj_info, "features": features, "location": attributes["location"], "object_vector":embedding_obj, "features_vector":embedding_features,"type":type}
 
+from models.msgExtractor import BertTokenClassifier
+from models.msgClassifier import BertSequenceClassifier
+handler = MessageHandler("configs/bert-tiny-tokenizer",
+                             BertSequenceClassifier(),
+                             "configs/rubert-tokenizer",
+                             BertTokenClassifier())
+handler.load()

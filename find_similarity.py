@@ -1,18 +1,10 @@
 import sqlite3
-import argparse
 from Announcement import scoring
-from MessageHandler import MessageHandler
+from MessageHandler import handler
 import numpy as np
-from models.msgExtractor import BertTokenClassifier
-from models.msgClassifier import BertSequenceClassifier
 
-parser = argparse.ArgumentParser("update")
-parser.add_argument('--text', type=str, default='Потерялась собака', help='text')
-parser.add_argument('--count', type=int, default='100', help='text')
 
-args = parser.parse_args()
-
-def main():
+def find_similarity(text,types,count):
     connection = sqlite3.connect('database.db')
     connection.row_factory = sqlite3.Row
     cursor = connection.cursor()
@@ -26,27 +18,24 @@ def main():
         if not messanges[i]["features_vector"] is None:
             messanges[i]["features_vector"] = np.frombuffer(messanges[i]["features_vector"],dtype=np.float32)
 
-    handler = MessageHandler("configs/bert-tiny-tokenizer",
-                             BertSequenceClassifier(),
-                             "configs/rubert-tokenizer",
-                             BertTokenClassifier())
-    handler.load()
-    source_info = handler.pipeline(args.text)
-    print(source_info)
-    print("******************")
-
+    source_info = handler.pipeline(text)
+    if not source_info:
+        source_info = handler.pipeline("Потерял "+text)
+    if not source_info:
+        return []
+    print("Объект:", source_info["object"])
+    rel_messages = []
     for i in range(len(messanges)):
+        messanges[i]["group_name"] = cursor.execute("SELECT name FROM groups WHERE id =" +str(messanges[i]["group_id"])).fetchone()["name"]
         messanges[i]["score"] = scoring(source_info, messanges[i])
+        if messanges[i]["type"] not in types:
+            messanges[i]["score"] = 0
+        else:
+            rel_messages.append(messanges[i])
 
-    messanges.sort(key=lambda x: x["score"], reverse=True)
+    rel_messages.sort(key=lambda x: x["score"], reverse=True)
     connection.close()
-    return messanges[:args.count]
-
-simi = main()
-
-for i in simi:
-    print(i["text"])
-    print("-------------------")
+    return rel_messages[:count]
 
 
 
